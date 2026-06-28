@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Rangertaha/terraform-provider-polymarket/internal/sign"
@@ -39,6 +40,9 @@ type Client struct {
 	apiKey       string
 	signer       *sign.Signer
 	httpClient   *http.Client
+
+	credsMu sync.Mutex
+	creds   *APICredentials // lazily derived L2 credentials, cached
 }
 
 // Option customizes a Client during construction.

@@ -82,6 +82,9 @@ func (s *Signer) Address() string { return s.address.Hex() }
 // Funder returns the checksummed funding wallet address.
 func (s *Signer) Funder() string { return s.funder.Hex() }
 
+// SignatureType returns the Polymarket signature type this signer uses.
+func (s *Signer) SignatureType() uint8 { return s.sigType }
+
 // SignClobAuth produces the EIP-712 L1 signature used to derive or create API
 // credentials. timestamp is Unix seconds as a string; nonce is typically 0.
 func (s *Signer) SignClobAuth(timestamp string, nonce int64) (string, error) {

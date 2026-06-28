@@ -219,8 +219,11 @@ func (p *polymarketProvider) DataSources(_ context.Context) []func() datasource.
 	}
 }
 
-// Resources registers the provider's managed resources. Polymarket data is
-// read-only today, so none are exposed yet; add order/position resources here.
+// Resources registers the provider's managed resources. These require the
+// provider's private_key to be configured.
 func (p *polymarketProvider) Resources(_ context.Context) []func() resource.Resource {
-	return []func() resource.Resource{}
+	return []func() resource.Resource{
+		NewOrderResource,
+		NewAPIKeyResource,
+	}
 }

@@ -163,9 +163,22 @@ book, which is an impedance mismatch worth calling out explicitly.
 
 | Terraform object | Kind | Endpoint | Status |
 | --- | --- | --- | --- |
-| `polymarket_api_key` | resource | `POST /auth/api-key` / `DELETE` | 🔒 |
-| `polymarket_order` | resource | `POST /order`, `DELETE /order` | 🔒 |
-| `polymarket_allowance` | resource | on-chain ERC-20 / CTF `approve` | 🔒 |
+| `polymarket_api_key` | resource | `POST /auth/api-key` / `DELETE` | ✅ |
+| `polymarket_order` | resource | `POST /order`, `GET /data/order/{id}`, `DELETE /order` | ✅ |
+| `polymarket_allowance` | resource | on-chain ERC-20 / CTF `approve` | ⬜ (deferred — needs Polygon RPC + gas; not HTTP-mockable) |
+
+> **Phase 5 (HTTP resources) complete.** `polymarket_order` places a signed
+> order (Create), refreshes status via `GET /data/order/{id}` and self-removes
+> from state when the order is gone (Read), and cancels on destroy (Delete);
+> every input forces replacement to model out-of-band fills. `polymarket_api_key`
+> creates and revokes an L2 key set. The client derives L2 credentials lazily and
+> caches them. Order amount conversion, L2 HMAC auth, and the full
+> place/get/cancel flow are unit-tested against a mock CLOB, and the complete
+> apply→refresh→destroy lifecycle is verified through real Terraform against a
+> local mock. `polymarket_allowance` is deferred: ERC-20/CTF `approve` requires
+> submitting on-chain Polygon transactions (RPC endpoint + gas + nonce
+> management), which is a separate workstream and cannot be mock-verified like
+> the HTTP surface.
 
 **Design notes & open questions**
 

@@ -27,6 +27,28 @@ func WithSigner(s *sign.Signer) Option {
 // HasSigner reports whether the client can make authenticated requests.
 func (c *Client) HasSigner() bool { return c.signer != nil }
 
+// WithCredentials presets the L2 API credentials, skipping the lazy derivation
+// that would otherwise happen on the first authenticated trading request.
+func WithCredentials(creds *APICredentials) Option {
+	return func(c *Client) { c.creds = creds }
+}
+
+// ensureCreds returns the cached L2 credentials, deriving and caching them from
+// the signer on first use.
+func (c *Client) ensureCreds(ctx context.Context) (*APICredentials, error) {
+	c.credsMu.Lock()
+	defer c.credsMu.Unlock()
+	if c.creds != nil {
+		return c.creds, nil
+	}
+	creds, err := c.DeriveAPIKey(ctx)
+	if err != nil {
+		return nil, err
+	}
+	c.creds = creds
+	return creds, nil
+}
+
 // APICredentials are the L2 API key set derived from an L1 signature. The secret
 // and passphrase are sensitive and authenticate subsequent HMAC-signed requests.
 type APICredentials struct {
@@ -45,6 +67,14 @@ func (c *Client) DeriveAPIKey(ctx context.Context) (*APICredentials, error) {
 // (POST /auth/api-key).
 func (c *Client) CreateAPIKey(ctx context.Context) (*APICredentials, error) {
 	return c.l1Request(ctx, http.MethodPost, "/auth/api-key")
+}
+
+// DeleteAPIKey revokes the API credentials currently in use (DELETE /auth/api-key).
+func (c *Client) DeleteAPIKey(ctx context.Context) error {
+	if c.signer == nil {
+		return ErrNoSigner
+	}
+	return c.l2Request(ctx, http.MethodDelete, "/auth/api-key", nil, nil)
 }
 
 // l1Request performs an L1 (EIP-712) authenticated request against the CLOB and
