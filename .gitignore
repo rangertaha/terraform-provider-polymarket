@@ -1,0 +1,27 @@
+# Compiled provider binary
+terraform-provider-polymarket
+dist/
+
+# Go
+*.test
+*.out
+vendor/
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
