@@ -44,7 +44,7 @@ output "order_status" {
 
 - `price` (Number) Limit price per share, in the open interval `(0, 1)`.
 - `side` (String) Order side: `BUY` or `SELL`.
-- `size` (Number) Order size, in shares.
+- `size` (Number) Order size, in shares. Must be positive.
 - `token_id` (String) CLOB ERC-1155 token ID of the outcome to trade. Obtain it from a market's `clob_token_ids` attribute.
 
 ### Optional

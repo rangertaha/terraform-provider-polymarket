@@ -39,3 +39,29 @@ func TestOpenUnitIntervalValidator(t *testing.T) {
 		})
 	}
 }
+
+func TestPositiveFloatValidator(t *testing.T) {
+	cases := []struct {
+		name    string
+		value   types.Float64
+		wantErr bool
+	}{
+		{"positive", types.Float64Value(100), false},
+		{"tiny positive", types.Float64Value(0.0001), false},
+		{"zero", types.Float64Value(0), true},
+		{"negative", types.Float64Value(-5), true},
+		{"null skipped", types.Float64Null(), false},
+		{"unknown skipped", types.Float64Unknown(), false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			req := validator.Float64Request{ConfigValue: tc.value}
+			resp := &validator.Float64Response{}
+			positiveFloat().ValidateFloat64(context.Background(), req, resp)
+			if got := resp.Diagnostics.HasError(); got != tc.wantErr {
+				t.Errorf("HasError() = %v, want %v (diags: %v)", got, tc.wantErr, resp.Diagnostics)
+			}
+		})
+	}
+}

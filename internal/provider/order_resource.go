@@ -90,8 +90,9 @@ func (r *orderResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 			"size": schema.Float64Attribute{
 				Required:            true,
 				PlanModifiers:       []planmodifier.Float64{float64planmodifier.RequiresReplace()},
-				Description:         "Order size, in shares.",
-				MarkdownDescription: "Order size, in shares.",
+				Validators:          []validator.Float64{positiveFloat()},
+				Description:         "Order size, in shares. Must be positive.",
+				MarkdownDescription: "Order size, in shares. Must be positive.",
 			},
 			"fee_rate_bps": schema.Int64Attribute{
 				Optional:            true,
@@ -118,6 +119,7 @@ func (r *orderResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 			"order_type": schema.StringAttribute{
 				Optional:      true,
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
+				Validators:    []validator.String{stringvalidator.OneOf("GTC", "GTD", "FOK", "FAK")},
 				Description: "Order type: \"GTC\" (good-till-cancelled, the default), \"GTD\" " +
 					"(good-till-date, requires expiration), \"FOK\", or \"FAK\".",
 				MarkdownDescription: "Order type: `GTC` (good-till-cancelled, the default), `GTD` " +
