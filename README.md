@@ -95,6 +95,13 @@ provider_installation {
 }
 ```
 
+## Releasing
+
+Releases publish to the Terraform Registry via a tag-triggered, GPG-signed
+GitHub Actions workflow. See [`RELEASING.md`](./RELEASING.md) for one-time GPG
+key generation, registry/secret setup, and how to cut a release. Changes are
+tracked in [`CHANGELOG.md`](./CHANGELOG.md).
+
 ## API Coverage Plan
 
 The full roadmap toward complete Polymarket API coverage lives in
