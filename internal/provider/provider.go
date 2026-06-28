@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -120,7 +121,8 @@ func (p *polymarketProvider) Schema(_ context.Context, _ provider.SchemaRequest,
 					"be set with the `POLYMARKET_PRIVATE_KEY` environment variable.",
 			},
 			"funder_address": schema.StringAttribute{
-				Optional: true,
+				Optional:   true,
+				Validators: []validator.String{ethAddress()},
 				Description: "Address of the wallet that holds USDC and funds orders. For " +
 					"email/magic or browser proxy accounts this differs from the signing key's " +
 					"address; for a plain EOA it defaults to the signing address. May also be " +

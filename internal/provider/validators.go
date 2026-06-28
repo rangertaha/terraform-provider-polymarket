@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
@@ -66,3 +67,34 @@ func (v positiveFloatValidator) ValidateFloat64(_ context.Context, req validator
 
 // positiveFloat validates that a float is strictly greater than 0.
 func positiveFloat() validator.Float64 { return positiveFloatValidator{} }
+
+// ethAddressValidator requires a valid 0x-prefixed 20-byte hex Ethereum address.
+type ethAddressValidator struct{}
+
+func (v ethAddressValidator) Description(_ context.Context) string {
+	return "value must be a 0x-prefixed 20-byte hex Ethereum address"
+}
+
+func (v ethAddressValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v ethAddressValidator) ValidateString(_ context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	val := req.ConfigValue.ValueString()
+	if val == "" {
+		return
+	}
+	if !common.IsHexAddress(val) {
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"Invalid Ethereum address",
+			fmt.Sprintf("value must be a 0x-prefixed 20-byte hex Ethereum address, got %q", val),
+		)
+	}
+}
+
+// ethAddress validates that a string is a well-formed Ethereum address.
+func ethAddress() validator.String { return ethAddressValidator{} }

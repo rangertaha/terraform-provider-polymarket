@@ -40,6 +40,34 @@ func TestOpenUnitIntervalValidator(t *testing.T) {
 	}
 }
 
+func TestEthAddressValidator(t *testing.T) {
+	cases := []struct {
+		name    string
+		value   types.String
+		wantErr bool
+	}{
+		{"valid checksummed", types.StringValue("0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf"), false},
+		{"valid lowercase", types.StringValue("0x000000000000000000000000000000000000dead"), false},
+		{"too short", types.StringValue("0x1234"), true},
+		{"no hex", types.StringValue("0xZZZZ552091A69125d5DfCb7b8C2659029395Bdf"), true},
+		{"not an address", types.StringValue("nope"), true},
+		{"empty skipped", types.StringValue(""), false},
+		{"null skipped", types.StringNull(), false},
+		{"unknown skipped", types.StringUnknown(), false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			req := validator.StringRequest{ConfigValue: tc.value}
+			resp := &validator.StringResponse{}
+			ethAddress().ValidateString(context.Background(), req, resp)
+			if got := resp.Diagnostics.HasError(); got != tc.wantErr {
+				t.Errorf("HasError() = %v, want %v (diags: %v)", got, tc.wantErr, resp.Diagnostics)
+			}
+		})
+	}
+}
+
 func TestPositiveFloatValidator(t *testing.T) {
 	cases := []struct {
 		name    string
