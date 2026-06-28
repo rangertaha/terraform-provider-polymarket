@@ -6,10 +6,14 @@ package provider
 import (
 	"context"
 	"fmt"
+	"regexp"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
+
+// hash32Pattern matches a 0x-prefixed 32-byte hex hash (a condition ID).
+var hash32Pattern = regexp.MustCompile("^0x[0-9a-fA-F]{64}$")
 
 // openUnitIntervalValidator requires a float in the open interval (0, 1) — the
 // valid range for a Polymarket price (0 and 1 are excluded).
@@ -98,3 +102,35 @@ func (v ethAddressValidator) ValidateString(_ context.Context, req validator.Str
 
 // ethAddress validates that a string is a well-formed Ethereum address.
 func ethAddress() validator.String { return ethAddressValidator{} }
+
+// conditionIDValidator requires a 0x-prefixed 32-byte hex hash, the form of a
+// Polymarket market condition ID.
+type conditionIDValidator struct{}
+
+func (v conditionIDValidator) Description(_ context.Context) string {
+	return "value must be a 0x-prefixed 32-byte hex hash (66 characters)"
+}
+
+func (v conditionIDValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v conditionIDValidator) ValidateString(_ context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	val := req.ConfigValue.ValueString()
+	if val == "" {
+		return
+	}
+	if !hash32Pattern.MatchString(val) {
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"Invalid condition ID",
+			fmt.Sprintf("value must be a 0x-prefixed 32-byte hex hash (66 characters), got %q", val),
+		)
+	}
+}
+
+// conditionID validates that a string is a well-formed market condition ID.
+func conditionID() validator.String { return conditionIDValidator{} }

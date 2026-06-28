@@ -67,6 +67,7 @@ func (d *tradesDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 			},
 			"market": schema.StringAttribute{
 				Optional:            true,
+				Validators:          []validator.String{conditionID()},
 				Description:         "When set, restricts results to trades in the market with this condition ID.",
 				MarkdownDescription: "When set, restricts results to trades in the market with this condition ID.",
 			},
@@ -306,7 +307,8 @@ func (d *holdersDataSource) Schema(_ context.Context, _ datasource.SchemaRequest
 			"by its condition ID.",
 		Attributes: map[string]schema.Attribute{
 			"market": schema.StringAttribute{
-				Required: true,
+				Required:   true,
+				Validators: []validator.String{conditionID()},
 				Description: "Condition ID of the market whose holders to list (a 0x-prefixed " +
 					"hash). This is the only required input.",
 				MarkdownDescription: "Condition ID of the market whose holders to list (a " +

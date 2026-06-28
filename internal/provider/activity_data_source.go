@@ -78,6 +78,7 @@ func (d *activityDataSource) Schema(_ context.Context, _ datasource.SchemaReques
 			},
 			"market": schema.StringAttribute{
 				Optional:            true,
+				Validators:          []validator.String{conditionID()},
 				Description:         "When set, restricts results to activity in the market with this condition ID.",
 				MarkdownDescription: "When set, restricts results to activity in the market with this condition ID.",
 			},

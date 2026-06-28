@@ -68,6 +68,33 @@ func TestEthAddressValidator(t *testing.T) {
 	}
 }
 
+func TestConditionIDValidator(t *testing.T) {
+	cases := []struct {
+		name    string
+		value   types.String
+		wantErr bool
+	}{
+		{"valid", types.StringValue("0x688954ad8e279cc5febef6739d4f87acd3e42ca768ac6a8b621386a8578532ed"), false},
+		{"address is too short", types.StringValue("0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf"), true},
+		{"no prefix", types.StringValue("688954ad8e279cc5febef6739d4f87acd3e42ca768ac6a8b621386a8578532ed"), true},
+		{"bad hex", types.StringValue("0xZZ8954ad8e279cc5febef6739d4f87acd3e42ca768ac6a8b621386a8578532ed"), true},
+		{"empty skipped", types.StringValue(""), false},
+		{"null skipped", types.StringNull(), false},
+		{"unknown skipped", types.StringUnknown(), false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			req := validator.StringRequest{ConfigValue: tc.value}
+			resp := &validator.StringResponse{}
+			conditionID().ValidateString(context.Background(), req, resp)
+			if got := resp.Diagnostics.HasError(); got != tc.wantErr {
+				t.Errorf("HasError() = %v, want %v (diags: %v)", got, tc.wantErr, resp.Diagnostics)
+			}
+		})
+	}
+}
+
 func TestPositiveFloatValidator(t *testing.T) {
 	cases := []struct {
 		name    string
