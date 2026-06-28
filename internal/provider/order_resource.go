@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/Rangertaha/terraform-provider-polymarket/internal/client"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
@@ -15,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -74,12 +76,14 @@ func (r *orderResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 			"side": schema.StringAttribute{
 				Required:            true,
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.RequiresReplace()},
+				Validators:          []validator.String{stringvalidator.OneOf("BUY", "SELL")},
 				Description:         "Order side: \"BUY\" or \"SELL\".",
 				MarkdownDescription: "Order side: `BUY` or `SELL`.",
 			},
 			"price": schema.Float64Attribute{
 				Required:            true,
 				PlanModifiers:       []planmodifier.Float64{float64planmodifier.RequiresReplace()},
+				Validators:          []validator.Float64{openUnitInterval()},
 				Description:         "Limit price per share, in the open interval (0, 1).",
 				MarkdownDescription: "Limit price per share, in the open interval `(0, 1)`.",
 			},
