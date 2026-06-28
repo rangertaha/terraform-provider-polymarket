@@ -9,6 +9,7 @@ import (
 	"github.com/Rangertaha/terraform-provider-polymarket/internal/client"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -64,6 +65,7 @@ func (d *activityDataSource) Schema(_ context.Context, _ datasource.SchemaReques
 		Attributes: map[string]schema.Attribute{
 			"user": schema.StringAttribute{
 				Required:            true,
+				Validators:          []validator.String{ethAddress()},
 				Description:         "Wallet address whose activity to list (0x-prefixed). The only required input.",
 				MarkdownDescription: "Wallet address whose activity to list (`0x`-prefixed). The only required input.",
 			},

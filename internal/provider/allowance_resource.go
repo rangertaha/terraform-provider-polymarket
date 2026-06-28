@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -61,6 +62,7 @@ func (r *allowanceResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 			"token": schema.StringAttribute{
 				Required:      true,
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
+				Validators:    []validator.String{ethAddress()},
 				Description: "Address of the token contract to approve. Typically the USDC token " +
 					"(for ERC-20) or the Conditional Tokens contract (for ERC-1155).",
 				MarkdownDescription: "Address of the token contract to approve. Typically the USDC " +
@@ -69,6 +71,7 @@ func (r *allowanceResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 			"spender": schema.StringAttribute{
 				Required:      true,
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
+				Validators:    []validator.String{ethAddress()},
 				Description: "Address granted the approval, e.g. the CTF Exchange or NegRisk " +
 					"Exchange contract.",
 				MarkdownDescription: "Address granted the approval, e.g. the CTF Exchange or " +
