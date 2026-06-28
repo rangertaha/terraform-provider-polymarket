@@ -74,21 +74,81 @@ func New(opts ...Option) *Client {
 // surfaces. Polymarket returns several numeric and array fields as JSON-encoded
 // strings; those are decoded into native types by the data sources.
 type Market struct {
-	ID            string `json:"id"`
-	Question      string `json:"question"`
-	Slug          string `json:"slug"`
-	Description   string `json:"description"`
-	Active        bool   `json:"active"`
-	Closed        bool   `json:"closed"`
-	Archived      bool   `json:"archived"`
-	Liquidity     string `json:"liquidity"`
-	Volume        string `json:"volume"`
-	StartDate     string `json:"startDate"`
-	EndDate       string `json:"endDate"`
-	ConditionID   string `json:"conditionId"`
-	QuestionID    string `json:"questionID"`
-	Outcomes      string `json:"outcomes"`      // JSON-encoded array, e.g. "[\"Yes\",\"No\"]"
-	OutcomePrices string `json:"outcomePrices"` // JSON-encoded array, e.g. "[\"0.6\",\"0.4\"]"
+	ID               string `json:"id"`
+	Question         string `json:"question"`
+	Slug             string `json:"slug"`
+	Description      string `json:"description"`
+	ResolutionSource string `json:"resolutionSource"`
+	Active           bool   `json:"active"`
+	Closed           bool   `json:"closed"`
+	Archived         bool   `json:"archived"`
+	Liquidity        string `json:"liquidity"`
+	Volume           string `json:"volume"`
+	StartDate        string `json:"startDate"`
+	EndDate          string `json:"endDate"`
+	CreatedAt        string `json:"createdAt"`
+	UpdatedAt        string `json:"updatedAt"`
+	ConditionID      string `json:"conditionId"`
+	QuestionID       string `json:"questionID"`
+	GroupItemTitle   string `json:"groupItemTitle"`
+	Image            string `json:"image"`
+	Icon             string `json:"icon"`
+	Outcomes         string `json:"outcomes"`      // JSON-encoded array, e.g. "[\"Yes\",\"No\"]"
+	OutcomePrices    string `json:"outcomePrices"` // JSON-encoded array, e.g. "[\"0.6\",\"0.4\"]"
+	ClobTokenIDs     string `json:"clobTokenIds"`  // JSON-encoded array of CLOB ERC-1155 token IDs
+
+	// Trading statistics and live pricing (native JSON numbers).
+	Volume24hr            float64 `json:"volume24hr"`
+	Volume1wk             float64 `json:"volume1wk"`
+	Volume1mo             float64 `json:"volume1mo"`
+	Volume1yr             float64 `json:"volume1yr"`
+	Spread                float64 `json:"spread"`
+	BestBid               float64 `json:"bestBid"`
+	BestAsk               float64 `json:"bestAsk"`
+	LastTradePrice        float64 `json:"lastTradePrice"`
+	Competitive           float64 `json:"competitive"`
+	OrderMinSize          float64 `json:"orderMinSize"`
+	OrderPriceMinTickSize float64 `json:"orderPriceMinTickSize"`
+
+	// Order-book status flags.
+	EnableOrderBook bool `json:"enableOrderBook"`
+	AcceptingOrders bool `json:"acceptingOrders"`
+}
+
+// Tag is a category label attached to events and markets.
+type Tag struct {
+	ID    string `json:"id"`
+	Label string `json:"label"`
+	Slug  string `json:"slug"`
+}
+
+// Event groups one or more related markets (e.g. all outcomes of an election).
+type Event struct {
+	ID               string   `json:"id"`
+	Ticker           string   `json:"ticker"`
+	Slug             string   `json:"slug"`
+	Title            string   `json:"title"`
+	Description      string   `json:"description"`
+	ResolutionSource string   `json:"resolutionSource"`
+	StartDate        string   `json:"startDate"`
+	CreationDate     string   `json:"creationDate"`
+	EndDate          string   `json:"endDate"`
+	Image            string   `json:"image"`
+	Icon             string   `json:"icon"`
+	Active           bool     `json:"active"`
+	Closed           bool     `json:"closed"`
+	Archived         bool     `json:"archived"`
+	New              bool     `json:"new"`
+	Featured         bool     `json:"featured"`
+	Restricted       bool     `json:"restricted"`
+	CreatedAt        string   `json:"createdAt"`
+	UpdatedAt        string   `json:"updatedAt"`
+	EnableOrderBook  bool     `json:"enableOrderBook"`
+	NegRisk          bool     `json:"negRisk"`
+	CommentCount     int64    `json:"commentCount"`
+	SeriesSlug       string   `json:"seriesSlug"`
+	Markets          []Market `json:"markets"`
+	Tags             []Tag    `json:"tags"`
 }
 
 // MarketFilter narrows a ListMarkets query. Zero-value fields are omitted.
@@ -133,6 +193,50 @@ func (c *Client) ListMarkets(ctx context.Context, f MarketFilter) ([]Market, err
 		return nil, err
 	}
 	return markets, nil
+}
+
+// EventFilter narrows a ListEvents query. Zero-value fields are omitted.
+type EventFilter struct {
+	Limit  int64
+	Offset int64
+	Active *bool
+	Closed *bool
+	Slug   string
+}
+
+// GetEvent fetches a single event by its numeric ID.
+func (c *Client) GetEvent(ctx context.Context, id string) (*Event, error) {
+	var e Event
+	if err := c.get(ctx, "/events/"+url.PathEscape(id), nil, &e); err != nil {
+		return nil, err
+	}
+	return &e, nil
+}
+
+// ListEvents fetches events matching the supplied filter.
+func (c *Client) ListEvents(ctx context.Context, f EventFilter) ([]Event, error) {
+	q := url.Values{}
+	if f.Limit > 0 {
+		q.Set("limit", strconv.FormatInt(f.Limit, 10))
+	}
+	if f.Offset > 0 {
+		q.Set("offset", strconv.FormatInt(f.Offset, 10))
+	}
+	if f.Active != nil {
+		q.Set("active", strconv.FormatBool(*f.Active))
+	}
+	if f.Closed != nil {
+		q.Set("closed", strconv.FormatBool(*f.Closed))
+	}
+	if f.Slug != "" {
+		q.Set("slug", f.Slug)
+	}
+
+	var events []Event
+	if err := c.get(ctx, "/events", q, &events); err != nil {
+		return nil, err
+	}
+	return events, nil
 }
 
 // get performs a GET request and decodes the JSON response into out.

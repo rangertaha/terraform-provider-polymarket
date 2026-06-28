@@ -37,10 +37,15 @@ Pure HTTP GETs against the public Gamma API. No auth. Extends the existing clien
 | --- | --- | --- | --- |
 | `polymarket_market` | data source | `GET /markets/{id}` | ✅ |
 | `polymarket_markets` | data source | `GET /markets` | ✅ |
-| `polymarket_event` | data source | `GET /events/{id}` | 🔜 |
-| `polymarket_events` | data source | `GET /events` | 🔜 |
+| `polymarket_event` | data source | `GET /events/{id}` | ✅ |
+| `polymarket_events` | data source | `GET /events` | ✅ |
 | `polymarket_series` | data source | `GET /series/{id}` | ⬜ |
 | `polymarket_tags` | data source | `GET /tags` | ⬜ |
+
+> Market schema expanded with live pricing (`best_bid`, `best_ask`,
+> `last_trade_price`, `spread`), rolling volumes (`volume_24hr/1wk/1mo/1yr`),
+> `clob_token_ids`, order-book flags, and timestamps. Events embed their full
+> markets and tags. Remaining in this phase: `series` and `tags` data sources.
 
 **Tasks**
 

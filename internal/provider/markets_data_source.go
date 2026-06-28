@@ -93,89 +93,11 @@ func (d *marketsDataSource) Schema(_ context.Context, _ datasource.SchemaRequest
 				Description:         "List of markets matching the supplied filters.",
 				MarkdownDescription: "List of markets matching the supplied filters.",
 				NestedObject: schema.NestedAttributeObject{
-					Attributes: marketResultAttributes(),
+					// Shared with the single-market data source so both surface
+					// identical, fully documented fields.
+					Attributes: marketAttributes(false),
 				},
 			},
-		},
-	}
-}
-
-// marketResultAttributes returns the computed attribute schema for a single
-// market entry inside the markets list. It mirrors the single-market data
-// source so both surface identical, fully documented fields.
-func marketResultAttributes() map[string]schema.Attribute {
-	return map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Computed:            true,
-			Description:         "Numeric identifier of the market, as assigned by Polymarket.",
-			MarkdownDescription: "Numeric identifier of the market, as assigned by Polymarket.",
-		},
-		"question": schema.StringAttribute{
-			Computed:            true,
-			Description:         "Human-readable question the market resolves.",
-			MarkdownDescription: "Human-readable question the market resolves.",
-		},
-		"slug": schema.StringAttribute{
-			Computed:            true,
-			Description:         "URL-friendly slug identifying the market on polymarket.com.",
-			MarkdownDescription: "URL-friendly slug identifying the market on polymarket.com.",
-		},
-		"description": schema.StringAttribute{
-			Computed:            true,
-			Description:         "Long-form description and resolution criteria for the market.",
-			MarkdownDescription: "Long-form description and resolution criteria for the market.",
-		},
-		"active": schema.BoolAttribute{
-			Computed:            true,
-			Description:         "Whether the market is currently active and accepting trades.",
-			MarkdownDescription: "Whether the market is currently active and accepting trades.",
-		},
-		"closed": schema.BoolAttribute{
-			Computed:            true,
-			Description:         "Whether the market has closed and no longer accepts trades.",
-			MarkdownDescription: "Whether the market has closed and no longer accepts trades.",
-		},
-		"archived": schema.BoolAttribute{
-			Computed:            true,
-			Description:         "Whether the market has been archived and hidden from the default UI.",
-			MarkdownDescription: "Whether the market has been archived and hidden from the default UI.",
-		},
-		"liquidity": schema.StringAttribute{
-			Computed:            true,
-			Description:         "Total liquidity available in the market, in USDC, as a decimal string.",
-			MarkdownDescription: "Total liquidity available in the market, in USDC, as a decimal string.",
-		},
-		"volume": schema.StringAttribute{
-			Computed:            true,
-			Description:         "Cumulative trading volume of the market, in USDC, as a decimal string.",
-			MarkdownDescription: "Cumulative trading volume of the market, in USDC, as a decimal string.",
-		},
-		"start_date": schema.StringAttribute{
-			Computed:            true,
-			Description:         "ISO-8601 timestamp at which the market opened for trading.",
-			MarkdownDescription: "ISO-8601 timestamp at which the market opened for trading.",
-		},
-		"end_date": schema.StringAttribute{
-			Computed:            true,
-			Description:         "ISO-8601 timestamp at which the market is scheduled to close.",
-			MarkdownDescription: "ISO-8601 timestamp at which the market is scheduled to close.",
-		},
-		"condition_id": schema.StringAttribute{
-			Computed:            true,
-			Description:         "On-chain condition ID linking the market to its CTF contract.",
-			MarkdownDescription: "On-chain condition ID linking the market to its CTF contract.",
-		},
-		"outcomes": schema.ListAttribute{
-			Computed:            true,
-			ElementType:         types.StringType,
-			Description:         "Ordered list of outcome names; aligns positionally with outcome_prices.",
-			MarkdownDescription: "Ordered list of outcome names; aligns positionally with `outcome_prices`.",
-		},
-		"outcome_prices": schema.ListAttribute{
-			Computed:            true,
-			ElementType:         types.StringType,
-			Description:         "Current price (implied probability) of each outcome; aligns with outcomes.",
-			MarkdownDescription: "Current price (implied probability) of each outcome; aligns with `outcomes`.",
 		},
 	}
 }
