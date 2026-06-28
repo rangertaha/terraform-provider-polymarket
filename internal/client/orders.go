@@ -115,6 +115,26 @@ func (c *Client) CancelOrder(ctx context.Context, id string) error {
 	return c.l2Request(ctx, http.MethodDelete, "/order", body, nil)
 }
 
+// CancelOrders cancels several resting orders by ID in one request.
+func (c *Client) CancelOrders(ctx context.Context, ids []string) error {
+	if c.signer == nil {
+		return ErrNoSigner
+	}
+	body, err := json.Marshal(ids)
+	if err != nil {
+		return err
+	}
+	return c.l2Request(ctx, http.MethodDelete, "/orders", body, nil)
+}
+
+// CancelAll cancels every resting order owned by the configured wallet.
+func (c *Client) CancelAll(ctx context.Context) error {
+	if c.signer == nil {
+		return ErrNoSigner
+	}
+	return c.l2Request(ctx, http.MethodDelete, "/cancel-all", nil, nil)
+}
+
 // signedOrderBody is the JSON shape POST /order expects.
 type signedOrderBody struct {
 	Order     signedOrder `json:"order"`

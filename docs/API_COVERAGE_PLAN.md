@@ -90,6 +90,14 @@ second base URL, so generalize the client to address multiple hosts.
 **Exit criteria (met):** a config resolves a market's CLOB token IDs (Phase 1)
 and reads live bids/asks/price/midpoint/spread for them — verified end-to-end.
 
+> **Extended coverage added.** `polymarket_price_history` (`GET /prices-history`)
+> for charting, plus batch reads `polymarket_prices` (`POST /prices`) and
+> `polymarket_order_books` (`POST /books`) that quote/fetch many tokens in one
+> request — all verified live. At the client/SDK layer, `CancelOrders`
+> (`DELETE /orders`) and `CancelAll` (`DELETE /cancel-all`) round out order
+> management (mock-tested); they are not surfaced as Terraform objects because a
+> batch-cancel is an imperative action with no declarative resource analogue.
+
 ---
 
 ## Phase 3 — Data API read coverage (portfolio)

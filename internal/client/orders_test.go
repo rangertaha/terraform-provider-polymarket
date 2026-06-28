@@ -56,6 +56,14 @@ func newMockCLOB(t *testing.T) *httptest.Server {
 			verifyHMAC(t, r, "DELETE", "/order", readBody(t, r))
 			writeJSON(w, map[string]any{"canceled": []string{"0xabc"}})
 
+		case r.URL.Path == "/orders" && r.Method == http.MethodDelete:
+			verifyHMAC(t, r, "DELETE", "/orders", readBody(t, r))
+			writeJSON(w, map[string]any{"canceled": []string{"0xabc", "0xdef"}})
+
+		case r.URL.Path == "/cancel-all" && r.Method == http.MethodDelete:
+			verifyHMAC(t, r, "DELETE", "/cancel-all", nil)
+			writeJSON(w, map[string]any{"canceled": []string{"0xabc"}})
+
 		default:
 			t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -120,6 +128,19 @@ func TestCancelOrder(t *testing.T) {
 
 	if err := c.CancelOrder(context.Background(), "0xabc"); err != nil {
 		t.Fatalf("CancelOrder: %v", err)
+	}
+}
+
+func TestCancelOrdersAndAll(t *testing.T) {
+	srv := newMockCLOB(t)
+	defer srv.Close()
+	c := newOrderClient(t, srv.URL)
+
+	if err := c.CancelOrders(context.Background(), []string{"0xabc", "0xdef"}); err != nil {
+		t.Fatalf("CancelOrders: %v", err)
+	}
+	if err := c.CancelAll(context.Background()); err != nil {
+		t.Fatalf("CancelAll: %v", err)
 	}
 }
 
