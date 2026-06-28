@@ -289,7 +289,7 @@ func (c *Client) l2RequestStatus(ctx context.Context, method, path string, body 
 	if err != nil {
 		return 0, fmt.Errorf("requesting %s: %w", path, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return resp.StatusCode, nil

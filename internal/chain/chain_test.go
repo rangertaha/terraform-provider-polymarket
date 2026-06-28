@@ -84,7 +84,7 @@ func TestAllowanceERC20ReadsViaRPC(t *testing.T) {
 		default:
 			result = "0x"
 		}
-		fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":%q}`, req.ID, result)
+		_, _ = fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":%q}`, req.ID, result)
 	}))
 	defer srv.Close()
 

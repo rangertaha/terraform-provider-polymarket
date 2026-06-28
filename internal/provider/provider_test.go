@@ -9,33 +9,49 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 // testAccProtoV6ProviderFactories registers the provider for acceptance tests.
-// Each acceptance test transparently spins up the provider server defined here.
 var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
 	"polymarket": providerserver.NewProtocol6WithError(New("test")()),
 }
 
-// TestProvider performs basic schema validation that runs without network
-// access, catching schema definition errors early.
+// testAccPreCheck validates preconditions before acceptance tests run. The
+// public Gamma/CLOB/Data read APIs require no credentials, so there is nothing
+// to assert yet; authenticated tests would validate POLYMARKET_PRIVATE_KEY here.
+func testAccPreCheck(t *testing.T) {
+	t.Helper()
+}
+
+// TestProvider verifies the provider registers its data sources and resources.
+// It runs without network access, catching registration/schema wiring errors.
 func TestProvider(t *testing.T) {
 	p := New("test")()
 
-	schemaResp := &providerSchemaResponse{}
-	_ = schemaResp // placeholder to keep the import surface obvious
-
-	if got := len(p.DataSources(context.Background())); got == 0 {
-		t.Fatalf("expected provider to register data sources, got %d", got)
+	if got := len(p.DataSources(context.Background())); got != 15 {
+		t.Errorf("expected 15 data sources, got %d", got)
+	}
+	if got := len(p.Resources(context.Background())); got != 3 {
+		t.Errorf("expected 3 resources, got %d", got)
 	}
 }
 
-// providerSchemaResponse is an alias kept for readability in future schema tests.
-type providerSchemaResponse struct{}
-
-// testAccPreCheck validates required preconditions before acceptance tests run.
-func testAccPreCheck(t *testing.T) {
-	t.Helper()
-	// Acceptance tests run against the live public Gamma API and require no
-	// credentials. Add validation here if authenticated endpoints are added.
+// TestAccMarketsDataSource exercises the markets data source against the live
+// public Gamma API. Gated behind TF_ACC, so it is skipped by a plain `go test`.
+func TestAccMarketsDataSource(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: `data "polymarket_markets" "test" {
+  limit = 1
+}`,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.polymarket_markets.test", "markets.#"),
+				),
+			},
+		},
+	})
 }

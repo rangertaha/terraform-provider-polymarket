@@ -114,7 +114,7 @@ func (c *Client) l1Request(ctx context.Context, method, path string) (*APICreden
 	if err != nil {
 		return nil, fmt.Errorf("requesting %s: %w", path, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("polymarket CLOB auth returned status %d for %s", resp.StatusCode, path)

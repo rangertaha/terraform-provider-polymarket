@@ -611,7 +611,7 @@ func (c *Client) getFrom(ctx context.Context, base, path string, query url.Value
 	if err != nil {
 		return fmt.Errorf("requesting %s: %w", u, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("polymarket API returned status %d for %s", resp.StatusCode, u)

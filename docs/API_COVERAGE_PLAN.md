@@ -212,16 +212,17 @@ cancel a GTC limit order through Terraform, with status reflected on refresh.
 
 Cross-cutting quality work, run continuously but gated here for 1.0.
 
-- **Acceptance tests** (`TF_ACC=1`) for every data source against the live public
-  APIs; mocked HTTP for signing/order logic.
-- **Rate limiting & retries** with backoff in the shared transport.
-- **Pagination helpers** that transparently follow `next_cursor` / offset.
-- **`tfplugindocs`** generation wired into CI (`make docs`); every attribute
-  already carries descriptions so docs render fully.
-- **CI**: `go test`, `go vet`, `gofmt -l`, `golangci-lint`, and a Terraform
-  `validate` over `examples/`.
-- **Release**: GoReleaser + GPG signing (`.goreleaser.yml`) and Terraform Registry
-  publication under `Rangertaha/polymarket`.
+- ✅ **`tfplugindocs`** wired in (`//go:generate`, `make docs`, tool dependency);
+  full `docs/` reference generated for all 15 data sources + 3 resources.
+- ✅ **CI** (`.github/workflows/test.yml`): build, `go vet`, `gofmt -l`,
+  `go test`, `golangci-lint` (0 issues), and a docs-up-to-date check.
+- ✅ **Release** (`.github/workflows/release.yml`): GoReleaser + GPG signing on
+  `v*` tags, ready for Terraform Registry publication under `rangertaha/polymarket`.
+- ✅ **Acceptance test** (`TF_ACC=1`) for the markets data source against the
+  live public API; mocked HTTP/RPC for signing, order, and approval logic.
+- Future: rate limiting + retries with backoff in the shared transport;
+  pagination helpers that follow `next_cursor`/offset; acceptance tests for the
+  remaining data sources; testnet (Amoy) verification of the write resources.
 
 ---
 
