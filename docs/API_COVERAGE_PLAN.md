@@ -98,13 +98,18 @@ Public on-chain analytics keyed by wallet address or market.
 
 | Terraform object | Kind | Endpoint | Status |
 | --- | --- | --- | --- |
-| `polymarket_positions` | data source | `GET /positions?user=` | ⬜ |
-| `polymarket_holders` | data source | `GET /holders?market=` | ⬜ |
-| `polymarket_trades` | data source | `GET /trades` | ⬜ |
-| `polymarket_portfolio_value` | data source | `GET /value?user=` | ⬜ |
+| `polymarket_positions` | data source | `GET /positions?user=` | ✅ |
+| `polymarket_holders` | data source | `GET /holders?market=` | ✅ |
+| `polymarket_trades` | data source | `GET /trades?user=` | ✅ |
+| `polymarket_portfolio_value` | data source | `GET /value?user=` | ✅ |
 
-**Exit criteria:** given a wallet address, a config can report current positions
-and realized/unrealized value — read-only, no signing.
+> **Phase 3 complete.** Added the `data_endpoint` provider attribute (env
+> `POLYMARKET_DATA_ENDPOINT`) and a third `getData` transport. Positions carry
+> full cost-basis and P&L; trades carry side/price/size/tx hash; holders group
+> top wallets per outcome token. All verified live against the Data API.
+
+**Exit criteria (met):** given a wallet address, a config reports current
+positions, executed trades, and realized/unrealized value — read-only, no signing.
 
 ---
 

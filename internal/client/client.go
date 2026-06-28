@@ -25,11 +25,15 @@ const DefaultEndpoint = "https://gamma-api.polymarket.com"
 // DefaultClobEndpoint is the public CLOB (order book) API base URL.
 const DefaultClobEndpoint = "https://clob.polymarket.com"
 
-// Client is a configured Polymarket API client. It addresses both the Gamma
-// catalog API and the CLOB order-book API.
+// DefaultDataEndpoint is the public Data API base URL (positions, trades, etc.).
+const DefaultDataEndpoint = "https://data-api.polymarket.com"
+
+// Client is a configured Polymarket API client. It addresses the Gamma catalog
+// API, the CLOB order-book API, and the Data (portfolio/analytics) API.
 type Client struct {
 	endpoint     string
 	clobEndpoint string
+	dataEndpoint string
 	apiKey       string
 	httpClient   *http.Client
 }
@@ -51,6 +55,15 @@ func WithClobEndpoint(endpoint string) Option {
 	return func(c *Client) {
 		if endpoint != "" {
 			c.clobEndpoint = strings.TrimRight(endpoint, "/")
+		}
+	}
+}
+
+// WithDataEndpoint overrides the Data API base URL.
+func WithDataEndpoint(endpoint string) Option {
+	return func(c *Client) {
+		if endpoint != "" {
+			c.dataEndpoint = strings.TrimRight(endpoint, "/")
 		}
 	}
 }
@@ -77,6 +90,7 @@ func New(opts ...Option) *Client {
 	c := &Client{
 		endpoint:     DefaultEndpoint,
 		clobEndpoint: DefaultClobEndpoint,
+		dataEndpoint: DefaultDataEndpoint,
 		httpClient:   &http.Client{Timeout: 30 * time.Second},
 	}
 	for _, opt := range opts {
@@ -388,6 +402,171 @@ func (c *Client) GetSpread(ctx context.Context, tokenID string) (string, error) 
 	return resp.Spread, nil
 }
 
+// Position is a wallet's holding in a single market outcome.
+type Position struct {
+	ProxyWallet        string  `json:"proxyWallet"`
+	Asset              string  `json:"asset"`       // CLOB token ID held
+	ConditionID        string  `json:"conditionId"` // parent market condition ID
+	Size               float64 `json:"size"`        // shares held
+	AvgPrice           float64 `json:"avgPrice"`
+	InitialValue       float64 `json:"initialValue"`
+	CurrentValue       float64 `json:"currentValue"`
+	CashPnl            float64 `json:"cashPnl"`
+	PercentPnl         float64 `json:"percentPnl"`
+	TotalBought        float64 `json:"totalBought"`
+	RealizedPnl        float64 `json:"realizedPnl"`
+	PercentRealizedPnl float64 `json:"percentRealizedPnl"`
+	CurPrice           float64 `json:"curPrice"`
+	Redeemable         bool    `json:"redeemable"`
+	Mergeable          bool    `json:"mergeable"`
+	Title              string  `json:"title"`
+	Slug               string  `json:"slug"`
+	Icon               string  `json:"icon"`
+	EventID            string  `json:"eventId"`
+	EventSlug          string  `json:"eventSlug"`
+	Outcome            string  `json:"outcome"`
+	OutcomeIndex       int64   `json:"outcomeIndex"`
+	OppositeOutcome    string  `json:"oppositeOutcome"`
+	OppositeAsset      string  `json:"oppositeAsset"`
+	EndDate            string  `json:"endDate"`
+	NegativeRisk       bool    `json:"negativeRisk"`
+}
+
+// Trade is a single executed trade by a wallet.
+type Trade struct {
+	ProxyWallet     string  `json:"proxyWallet"`
+	Side            string  `json:"side"` // BUY or SELL
+	Asset           string  `json:"asset"`
+	ConditionID     string  `json:"conditionId"`
+	Size            float64 `json:"size"`
+	Price           float64 `json:"price"`
+	Timestamp       int64   `json:"timestamp"` // Unix seconds
+	Title           string  `json:"title"`
+	Slug            string  `json:"slug"`
+	Icon            string  `json:"icon"`
+	EventSlug       string  `json:"eventSlug"`
+	Outcome         string  `json:"outcome"`
+	OutcomeIndex    int64   `json:"outcomeIndex"`
+	Name            string  `json:"name"`
+	Pseudonym       string  `json:"pseudonym"`
+	TransactionHash string  `json:"transactionHash"`
+}
+
+// Holder is one wallet's holding within a HolderGroup.
+type Holder struct {
+	ProxyWallet           string  `json:"proxyWallet"`
+	Asset                 string  `json:"asset"`
+	Amount                float64 `json:"amount"`
+	OutcomeIndex          int64   `json:"outcomeIndex"`
+	Name                  string  `json:"name"`
+	Pseudonym             string  `json:"pseudonym"`
+	Bio                   string  `json:"bio"`
+	DisplayUsernamePublic bool    `json:"displayUsernamePublic"`
+	ProfileImage          string  `json:"profileImage"`
+	Verified              bool    `json:"verified"`
+}
+
+// HolderGroup is the set of top holders for a single outcome token.
+type HolderGroup struct {
+	Token   string   `json:"token"`
+	Holders []Holder `json:"holders"`
+}
+
+// Value is a wallet's total portfolio value, in USDC.
+type Value struct {
+	User  string  `json:"user"`
+	Value float64 `json:"value"`
+}
+
+// PositionFilter narrows a ListPositions query. User is required.
+type PositionFilter struct {
+	User   string
+	Market string // optional condition ID to filter to one market
+	Limit  int64
+	Offset int64
+}
+
+// ListPositions fetches the open positions held by a wallet.
+func (c *Client) ListPositions(ctx context.Context, f PositionFilter) ([]Position, error) {
+	q := url.Values{}
+	q.Set("user", f.User)
+	if f.Market != "" {
+		q.Set("market", f.Market)
+	}
+	if f.Limit > 0 {
+		q.Set("limit", strconv.FormatInt(f.Limit, 10))
+	}
+	if f.Offset > 0 {
+		q.Set("offset", strconv.FormatInt(f.Offset, 10))
+	}
+
+	var positions []Position
+	if err := c.getData(ctx, "/positions", q, &positions); err != nil {
+		return nil, err
+	}
+	return positions, nil
+}
+
+// TradeFilter narrows a ListTrades query. User is required.
+type TradeFilter struct {
+	User   string
+	Market string // optional condition ID to filter to one market
+	Limit  int64
+	Offset int64
+}
+
+// ListTrades fetches the executed trades for a wallet.
+func (c *Client) ListTrades(ctx context.Context, f TradeFilter) ([]Trade, error) {
+	q := url.Values{}
+	q.Set("user", f.User)
+	if f.Market != "" {
+		q.Set("market", f.Market)
+	}
+	if f.Limit > 0 {
+		q.Set("limit", strconv.FormatInt(f.Limit, 10))
+	}
+	if f.Offset > 0 {
+		q.Set("offset", strconv.FormatInt(f.Offset, 10))
+	}
+
+	var trades []Trade
+	if err := c.getData(ctx, "/trades", q, &trades); err != nil {
+		return nil, err
+	}
+	return trades, nil
+}
+
+// GetValue fetches a wallet's total portfolio value. The endpoint returns a
+// single-element list; this returns a zero Value when the wallet is unknown.
+func (c *Client) GetValue(ctx context.Context, user string) (Value, error) {
+	q := url.Values{}
+	q.Set("user", user)
+	var values []Value
+	if err := c.getData(ctx, "/value", q, &values); err != nil {
+		return Value{}, err
+	}
+	if len(values) == 0 {
+		return Value{User: user}, nil
+	}
+	return values[0], nil
+}
+
+// GetHolders fetches the top holders for each outcome token of a market,
+// identified by its condition ID.
+func (c *Client) GetHolders(ctx context.Context, market string, limit int64) ([]HolderGroup, error) {
+	q := url.Values{}
+	q.Set("market", market)
+	if limit > 0 {
+		q.Set("limit", strconv.FormatInt(limit, 10))
+	}
+
+	var groups []HolderGroup
+	if err := c.getData(ctx, "/holders", q, &groups); err != nil {
+		return nil, err
+	}
+	return groups, nil
+}
+
 // get performs a GET against the Gamma API and decodes JSON into out.
 func (c *Client) get(ctx context.Context, path string, query url.Values, out any) error {
 	return c.getFrom(ctx, c.endpoint, path, query, out)
@@ -396,6 +575,11 @@ func (c *Client) get(ctx context.Context, path string, query url.Values, out any
 // getCLOB performs a GET against the CLOB API and decodes JSON into out.
 func (c *Client) getCLOB(ctx context.Context, path string, query url.Values, out any) error {
 	return c.getFrom(ctx, c.clobEndpoint, path, query, out)
+}
+
+// getData performs a GET against the Data API and decodes JSON into out.
+func (c *Client) getData(ctx context.Context, path string, query url.Values, out any) error {
+	return c.getFrom(ctx, c.dataEndpoint, path, query, out)
 }
 
 // getFrom performs a GET against the given base URL and decodes JSON into out.

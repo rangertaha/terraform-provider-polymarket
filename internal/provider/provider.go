@@ -28,6 +28,7 @@ type polymarketProvider struct {
 type polymarketProviderModel struct {
 	Endpoint     types.String `tfsdk:"endpoint"`
 	ClobEndpoint types.String `tfsdk:"clob_endpoint"`
+	DataEndpoint types.String `tfsdk:"data_endpoint"`
 	APIKey       types.String `tfsdk:"api_key"`
 }
 
@@ -77,6 +78,15 @@ func (p *polymarketProvider) Schema(_ context.Context, _ provider.SchemaRequest,
 					"to `https://clob.polymarket.com`. May also be set with the " +
 					"`POLYMARKET_CLOB_ENDPOINT` environment variable.",
 			},
+			"data_endpoint": schema.StringAttribute{
+				Optional: true,
+				Description: "Base URL of the Polymarket Data API (positions, trades, holders, " +
+					"portfolio value). Defaults to \"https://data-api.polymarket.com\". May also " +
+					"be set with the POLYMARKET_DATA_ENDPOINT environment variable.",
+				MarkdownDescription: "Base URL of the Polymarket Data API (positions, trades, " +
+					"holders, portfolio value). Defaults to `https://data-api.polymarket.com`. May " +
+					"also be set with the `POLYMARKET_DATA_ENDPOINT` environment variable.",
+			},
 			"api_key": schema.StringAttribute{
 				Optional:  true,
 				Sensitive: true,
@@ -105,11 +115,13 @@ func (p *polymarketProvider) Configure(ctx context.Context, req provider.Configu
 	// Configuration value precedence: explicit config > environment > default.
 	endpoint := firstNonEmpty(config.Endpoint, "POLYMARKET_ENDPOINT", client.DefaultEndpoint)
 	clobEndpoint := firstNonEmpty(config.ClobEndpoint, "POLYMARKET_CLOB_ENDPOINT", client.DefaultClobEndpoint)
+	dataEndpoint := firstNonEmpty(config.DataEndpoint, "POLYMARKET_DATA_ENDPOINT", client.DefaultDataEndpoint)
 	apiKey := firstNonEmpty(config.APIKey, "POLYMARKET_API_KEY", "")
 
 	c := client.New(
 		client.WithEndpoint(endpoint),
 		client.WithClobEndpoint(clobEndpoint),
+		client.WithDataEndpoint(dataEndpoint),
 		client.WithAPIKey(apiKey),
 	)
 
@@ -131,6 +143,10 @@ func (p *polymarketProvider) DataSources(_ context.Context) []func() datasource.
 		NewPriceDataSource,
 		NewMidpointDataSource,
 		NewSpreadDataSource,
+		NewPositionsDataSource,
+		NewTradesDataSource,
+		NewPortfolioValueDataSource,
+		NewHoldersDataSource,
 	}
 }
 
