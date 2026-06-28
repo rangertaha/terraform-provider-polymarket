@@ -165,7 +165,7 @@ book, which is an impedance mismatch worth calling out explicitly.
 | --- | --- | --- | --- |
 | `polymarket_api_key` | resource | `POST /auth/api-key` / `DELETE` | ✅ |
 | `polymarket_order` | resource | `POST /order`, `GET /data/order/{id}`, `DELETE /order` | ✅ |
-| `polymarket_allowance` | resource | on-chain ERC-20 / CTF `approve` | ⬜ (deferred — needs Polygon RPC + gas; not HTTP-mockable) |
+| `polymarket_allowance` | resource | on-chain ERC-20 `approve` / ERC-1155 `setApprovalForAll` | ✅ (live tx needs a real Polygon RPC + funded wallet) |
 
 > **Phase 5 (HTTP resources) complete.** `polymarket_order` places a signed
 > order (Create), refreshes status via `GET /data/order/{id}` and self-removes
@@ -175,10 +175,18 @@ book, which is an impedance mismatch worth calling out explicitly.
 > caches them. Order amount conversion, L2 HMAC auth, and the full
 > place/get/cancel flow are unit-tested against a mock CLOB, and the complete
 > apply→refresh→destroy lifecycle is verified through real Terraform against a
-> local mock. `polymarket_allowance` is deferred: ERC-20/CTF `approve` requires
-> submitting on-chain Polygon transactions (RPC endpoint + gas + nonce
-> management), which is a separate workstream and cannot be mock-verified like
-> the HTTP surface.
+> local mock.
+>
+> **`polymarket_allowance` complete.** A new `internal/chain` package (go-ethereum
+> `ethclient`/`bind`) manages ERC-20 USDC allowances (`approve`/`allowance`) and
+> ERC-1155 CTF operator approvals (`setApprovalForAll`/`isApprovedForAll`) against
+> a Polygon RPC endpoint configured via `rpc_endpoint`. The resource creates,
+> reads (drift detection), updates the ERC-20 amount, and revokes on destroy. ABI
+> selectors and calldata are pinned by unit tests; the allowance read path is
+> tested against a mock JSON-RPC server; and the provider plumbing (missing-RPC
+> diagnostic, clean configure with an RPC set) is verified through Terraform.
+> Live transaction submission still needs a real Polygon RPC and a funded wallet —
+> best exercised on the Amoy testnet (`chain_id = 80002`).
 
 **Design notes & open questions**
 

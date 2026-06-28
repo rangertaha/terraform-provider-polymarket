@@ -19,6 +19,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Rangertaha/terraform-provider-polymarket/internal/chain"
 	"github.com/Rangertaha/terraform-provider-polymarket/internal/sign"
 )
 
@@ -39,6 +40,7 @@ type Client struct {
 	dataEndpoint string
 	apiKey       string
 	signer       *sign.Signer
+	chain        *chain.Client
 	httpClient   *http.Client
 
 	credsMu sync.Mutex

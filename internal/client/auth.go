@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Rangertaha/terraform-provider-polymarket/internal/chain"
 	"github.com/Rangertaha/terraform-provider-polymarket/internal/sign"
 )
 
@@ -23,6 +24,14 @@ var ErrNoSigner = errors.New("polymarket: no private_key configured for authenti
 func WithSigner(s *sign.Signer) Option {
 	return func(c *Client) { c.signer = s }
 }
+
+// WithChain attaches an on-chain client, enabling allowance management.
+func WithChain(ch *chain.Client) Option {
+	return func(c *Client) { c.chain = ch }
+}
+
+// Chain returns the on-chain client, or nil if no rpc_endpoint was configured.
+func (c *Client) Chain() *chain.Client { return c.chain }
 
 // HasSigner reports whether the client can make authenticated requests.
 func (c *Client) HasSigner() bool { return c.signer != nil }

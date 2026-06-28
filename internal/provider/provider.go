@@ -7,6 +7,7 @@ package provider
 import (
 	"context"
 
+	"github.com/Rangertaha/terraform-provider-polymarket/internal/chain"
 	"github.com/Rangertaha/terraform-provider-polymarket/internal/client"
 	"github.com/Rangertaha/terraform-provider-polymarket/internal/sign"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -36,6 +37,7 @@ type polymarketProviderModel struct {
 	FunderAddress types.String `tfsdk:"funder_address"`
 	SignatureType types.Int64  `tfsdk:"signature_type"`
 	ChainID       types.Int64  `tfsdk:"chain_id"`
+	RPCEndpoint   types.String `tfsdk:"rpc_endpoint"`
 }
 
 // New returns a function that constructs the provider, capturing the build
@@ -146,6 +148,16 @@ func (p *polymarketProvider) Schema(_ context.Context, _ provider.SchemaRequest,
 					"mainnet); use `80002` for the Amoy testnet. May also be set with the " +
 					"`POLYMARKET_CHAIN_ID` environment variable.",
 			},
+			"rpc_endpoint": schema.StringAttribute{
+				Optional: true,
+				Description: "Polygon JSON-RPC endpoint URL used by the polymarket_allowance " +
+					"resource to read and submit on-chain approvals. Required only for managing " +
+					"allowances. May also be set with the POLYMARKET_RPC_ENDPOINT environment variable.",
+				MarkdownDescription: "Polygon JSON-RPC endpoint URL used by the " +
+					"`polymarket_allowance` resource to read and submit on-chain approvals. " +
+					"Required only for managing allowances. May also be set with the " +
+					"`POLYMARKET_RPC_ENDPOINT` environment variable.",
+			},
 		},
 	}
 }
@@ -189,6 +201,21 @@ func (p *polymarketProvider) Configure(ctx context.Context, req provider.Configu
 			return
 		}
 		opts = append(opts, client.WithSigner(signer))
+
+		// Build the on-chain client only when an RPC endpoint is also supplied;
+		// it is needed solely for the polymarket_allowance resource.
+		if rpcEndpoint := firstNonEmpty(config.RPCEndpoint, "POLYMARKET_RPC_ENDPOINT", ""); rpcEndpoint != "" {
+			chainClient, err := chain.New(ctx, rpcEndpoint, privKey, chainID)
+			if err != nil {
+				resp.Diagnostics.AddAttributeError(
+					path.Root("rpc_endpoint"),
+					"Invalid Polymarket on-chain configuration",
+					err.Error(),
+				)
+				return
+			}
+			opts = append(opts, client.WithChain(chainClient))
+		}
 	}
 
 	c := client.New(opts...)
@@ -225,5 +252,6 @@ func (p *polymarketProvider) Resources(_ context.Context) []func() resource.Reso
 	return []func() resource.Resource{
 		NewOrderResource,
 		NewAPIKeyResource,
+		NewAllowanceResource,
 	}
 }
