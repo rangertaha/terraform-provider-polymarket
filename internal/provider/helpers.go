@@ -6,6 +6,7 @@ package provider
 import (
 	"encoding/json"
 	"os"
+	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -18,6 +19,21 @@ func firstNonEmpty(configValue types.String, envVar, fallback string) string {
 	}
 	if v := os.Getenv(envVar); v != "" {
 		return v
+	}
+	return fallback
+}
+
+// firstNonZeroInt resolves an int64 config value using the precedence
+// explicit-config > environment-variable > fallback. A null or zero config
+// value falls through; an unparseable env var is ignored.
+func firstNonZeroInt(configValue types.Int64, envVar string, fallback int64) int64 {
+	if !configValue.IsNull() && configValue.ValueInt64() != 0 {
+		return configValue.ValueInt64()
+	}
+	if v := os.Getenv(envVar); v != "" {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil {
+			return n
+		}
 	}
 	return fallback
 }

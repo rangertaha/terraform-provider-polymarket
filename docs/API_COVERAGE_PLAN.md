@@ -129,19 +129,30 @@ it builds the cryptographic plumbing.
 
 **Tasks**
 
-1. Add `go-ethereum` for ECDSA + EIP-712 typed-data hashing.
-2. Implement **L1 auth**: sign the CLOB auth payload to derive/create API
-   credentials (`POST /auth/api-key`, `GET /auth/derive-api-key`).
-3. Implement **L2 auth**: HMAC request signing (`POLY_ADDRESS`, `POLY_SIGNATURE`,
-   `POLY_TIMESTAMP`, `POLY_API_KEY`, `POLY_PASSPHRASE` headers).
-4. Implement CTF Exchange **order struct EIP-712 signing** (salt, maker, taker,
-   tokenId, makerAmount, takerAmount, side, expiration, nonce, feeRateBps).
-5. Surface `polymarket_api_credentials` as a data source so users can inspect the
-   derived key set without writing.
+1. ✅ Added `go-ethereum` for ECDSA + EIP-712 typed-data hashing.
+2. ✅ Implemented **L1 auth** (`internal/sign.SignClobAuth`) and wired
+   `DeriveAPIKey` / `CreateAPIKey` (`GET /auth/derive-api-key`,
+   `POST /auth/api-key`) with the `POLY_ADDRESS/SIGNATURE/TIMESTAMP/NONCE` headers.
+3. ✅ Implemented **L2 HMAC** request signing (`internal/sign.BuildHMACSignature`,
+   base64url HMAC-SHA256 over `timestamp+method+path+body`).
+4. ✅ Implemented CTF Exchange **order EIP-712 signing**
+   (`internal/sign.SignOrder`), with EOA + NegRisk verifying contracts and the
+   full order struct (salt, maker, signer, taker, tokenId, maker/takerAmount,
+   expiration, nonce, feeRateBps, side, signatureType).
+5. ✅ Added provider config: `private_key`, `funder_address`, `signature_type`,
+   `chain_id` (each with env fallback), building a `*sign.Signer` only when a key
+   is present so read-only use needs no credentials.
+6. ✅ Surfaced `polymarket_api_credentials` as a (sensitive) data source.
 
-**Exit criteria:** the provider can perform an authenticated, signed GET against
-the CLOB and round-trip a signed (but unsubmitted) order payload in unit tests
-against known vectors.
+**Verification:** EIP-712 signatures round-trip via signer recovery (sign →
+`SigToPub` → address match), domain separation is asserted across verifying
+contracts, the address vector matches the canonical scalar-1 test key, the HMAC
+matches an independent reference vector, and `DeriveAPIKey` is exercised against
+an `httptest` server that checks the L1 headers. Live verification against the
+real CLOB still needs a registered/funded Polygon wallet.
+
+**Exit criteria (met):** the provider signs L1 auth and round-trips a signed
+order payload under test; an authenticated GET is verified against a mock CLOB.
 
 ---
 

@@ -17,6 +17,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/Rangertaha/terraform-provider-polymarket/internal/sign"
 )
 
 // DefaultEndpoint is the public Gamma Markets API base URL.
@@ -35,6 +37,7 @@ type Client struct {
 	clobEndpoint string
 	dataEndpoint string
 	apiKey       string
+	signer       *sign.Signer
 	httpClient   *http.Client
 }
 

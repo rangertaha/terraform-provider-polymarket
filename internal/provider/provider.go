@@ -8,7 +8,9 @@ import (
 	"context"
 
 	"github.com/Rangertaha/terraform-provider-polymarket/internal/client"
+	"github.com/Rangertaha/terraform-provider-polymarket/internal/sign"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -26,10 +28,14 @@ type polymarketProvider struct {
 
 // polymarketProviderModel maps provider schema attributes to Go types.
 type polymarketProviderModel struct {
-	Endpoint     types.String `tfsdk:"endpoint"`
-	ClobEndpoint types.String `tfsdk:"clob_endpoint"`
-	DataEndpoint types.String `tfsdk:"data_endpoint"`
-	APIKey       types.String `tfsdk:"api_key"`
+	Endpoint      types.String `tfsdk:"endpoint"`
+	ClobEndpoint  types.String `tfsdk:"clob_endpoint"`
+	DataEndpoint  types.String `tfsdk:"data_endpoint"`
+	APIKey        types.String `tfsdk:"api_key"`
+	PrivateKey    types.String `tfsdk:"private_key"`
+	FunderAddress types.String `tfsdk:"funder_address"`
+	SignatureType types.Int64  `tfsdk:"signature_type"`
+	ChainID       types.Int64  `tfsdk:"chain_id"`
 }
 
 // New returns a function that constructs the provider, capturing the build
@@ -99,6 +105,47 @@ func (p *polymarketProvider) Schema(_ context.Context, _ provider.SchemaRequest,
 					"for authenticated or rate-lifted access. May also be set with the " +
 					"`POLYMARKET_API_KEY` environment variable.",
 			},
+			"private_key": schema.StringAttribute{
+				Optional:  true,
+				Sensitive: true,
+				Description: "Polygon wallet private key (hex, with or without 0x) used to " +
+					"EIP-712 sign authenticated CLOB requests and orders. Only required for " +
+					"authenticated/trading use; read-only data sources work without it. May " +
+					"also be set with the POLYMARKET_PRIVATE_KEY environment variable.",
+				MarkdownDescription: "Polygon wallet private key (hex, with or without `0x`) used " +
+					"to EIP-712 sign authenticated CLOB requests and orders. Only required for " +
+					"authenticated/trading use; read-only data sources work without it. May also " +
+					"be set with the `POLYMARKET_PRIVATE_KEY` environment variable.",
+			},
+			"funder_address": schema.StringAttribute{
+				Optional: true,
+				Description: "Address of the wallet that holds USDC and funds orders. For " +
+					"email/magic or browser proxy accounts this differs from the signing key's " +
+					"address; for a plain EOA it defaults to the signing address. May also be " +
+					"set with the POLYMARKET_FUNDER environment variable.",
+				MarkdownDescription: "Address of the wallet that holds USDC and funds orders. For " +
+					"email/magic or browser proxy accounts this differs from the signing key's " +
+					"address; for a plain EOA it defaults to the signing address. May also be set " +
+					"with the `POLYMARKET_FUNDER` environment variable.",
+			},
+			"signature_type": schema.Int64Attribute{
+				Optional: true,
+				Description: "Polymarket signature type: 0 = EOA (default), 1 = email/magic " +
+					"proxy, 2 = browser/Gnosis proxy. May also be set with the " +
+					"POLYMARKET_SIGNATURE_TYPE environment variable.",
+				MarkdownDescription: "Polymarket signature type: `0` = EOA (default), `1` = " +
+					"email/magic proxy, `2` = browser/Gnosis proxy. May also be set with the " +
+					"`POLYMARKET_SIGNATURE_TYPE` environment variable.",
+			},
+			"chain_id": schema.Int64Attribute{
+				Optional: true,
+				Description: "EVM chain ID used when signing. Defaults to 137 (Polygon mainnet); " +
+					"use 80002 for the Amoy testnet. May also be set with the " +
+					"POLYMARKET_CHAIN_ID environment variable.",
+				MarkdownDescription: "EVM chain ID used when signing. Defaults to `137` (Polygon " +
+					"mainnet); use `80002` for the Amoy testnet. May also be set with the " +
+					"`POLYMARKET_CHAIN_ID` environment variable.",
+			},
 		},
 	}
 }
@@ -118,12 +165,33 @@ func (p *polymarketProvider) Configure(ctx context.Context, req provider.Configu
 	dataEndpoint := firstNonEmpty(config.DataEndpoint, "POLYMARKET_DATA_ENDPOINT", client.DefaultDataEndpoint)
 	apiKey := firstNonEmpty(config.APIKey, "POLYMARKET_API_KEY", "")
 
-	c := client.New(
+	opts := []client.Option{
 		client.WithEndpoint(endpoint),
 		client.WithClobEndpoint(clobEndpoint),
 		client.WithDataEndpoint(dataEndpoint),
 		client.WithAPIKey(apiKey),
-	)
+	}
+
+	// Build a signer only when a private key is supplied; read-only data sources
+	// work without one.
+	if privKey := firstNonEmpty(config.PrivateKey, "POLYMARKET_PRIVATE_KEY", ""); privKey != "" {
+		chainID := firstNonZeroInt(config.ChainID, "POLYMARKET_CHAIN_ID", 137)
+		sigType := firstNonZeroInt(config.SignatureType, "POLYMARKET_SIGNATURE_TYPE", 0)
+		funder := firstNonEmpty(config.FunderAddress, "POLYMARKET_FUNDER", "")
+
+		signer, err := sign.NewSigner(privKey, chainID, uint8(sigType), funder)
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("private_key"),
+				"Invalid Polymarket signing configuration",
+				err.Error(),
+			)
+			return
+		}
+		opts = append(opts, client.WithSigner(signer))
+	}
+
+	c := client.New(opts...)
 
 	// Make the client available to data sources and resources.
 	resp.DataSourceData = c
@@ -147,6 +215,7 @@ func (p *polymarketProvider) DataSources(_ context.Context) []func() datasource.
 		NewTradesDataSource,
 		NewPortfolioValueDataSource,
 		NewHoldersDataSource,
+		NewAPICredentialsDataSource,
 	}
 }
 
