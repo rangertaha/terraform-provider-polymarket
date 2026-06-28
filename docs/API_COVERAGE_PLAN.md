@@ -71,22 +71,24 @@ second base URL, so generalize the client to address multiple hosts.
 
 | Terraform object | Kind | Endpoint | Status |
 | --- | --- | --- | --- |
-| `polymarket_clob_market` | data source | `GET /markets/{condition_id}` | ⬜ |
-| `polymarket_order_book` | data source | `GET /book?token_id=` | ⬜ |
-| `polymarket_price` | data source | `GET /price?token_id=&side=` | ⬜ |
-| `polymarket_midpoint` | data source | `GET /midpoint?token_id=` | ⬜ |
-| `polymarket_spread` | data source | `GET /spread?token_id=` | ⬜ |
+| `polymarket_order_book` | data source | `GET /book?token_id=` | ✅ |
+| `polymarket_price` | data source | `GET /price?token_id=&side=` | ✅ |
+| `polymarket_midpoint` | data source | `GET /midpoint?token_id=` | ✅ |
+| `polymarket_spread` | data source | `GET /spread?token_id=` | ✅ |
+| `polymarket_clob_market` | data source | `GET /markets/{condition_id}` | ⬜ (deferred — largely redundant with the Gamma `market` + `order_book`) |
 
 **Tasks**
 
-1. Refactor `internal/client` into `gamma` and `clob` sub-clients sharing a base
-   transport (retry, rate-limit, error decoding).
-2. Add a `clob_endpoint` provider attribute (default
+1. ✅ Added a `clob_endpoint` provider attribute (default
    `https://clob.polymarket.com`, env `POLYMARKET_CLOB_ENDPOINT`).
-3. Model order-book levels as a nested list of `{ price, size }`.
+2. ✅ Generalized the client transport to address both hosts (`getFrom`).
+3. ✅ Modeled order-book levels as a nested list of `{ price, size }`.
+4. Future: split `internal/client` into `gamma`/`clob` sub-packages once auth
+   (Phase 4) adds more CLOB surface; the shared `getFrom` transport already
+   carries retry/error-decode and is the seam for that split.
 
-**Exit criteria:** a config can resolve a market's CLOB token IDs (Phase 1) and
-read live bids/asks/midpoint for them.
+**Exit criteria (met):** a config resolves a market's CLOB token IDs (Phase 1)
+and reads live bids/asks/price/midpoint/spread for them — verified end-to-end.
 
 ---
 

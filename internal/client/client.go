@@ -22,11 +22,16 @@ import (
 // DefaultEndpoint is the public Gamma Markets API base URL.
 const DefaultEndpoint = "https://gamma-api.polymarket.com"
 
-// Client is a configured Polymarket Gamma API client.
+// DefaultClobEndpoint is the public CLOB (order book) API base URL.
+const DefaultClobEndpoint = "https://clob.polymarket.com"
+
+// Client is a configured Polymarket API client. It addresses both the Gamma
+// catalog API and the CLOB order-book API.
 type Client struct {
-	endpoint   string
-	apiKey     string
-	httpClient *http.Client
+	endpoint     string
+	clobEndpoint string
+	apiKey       string
+	httpClient   *http.Client
 }
 
 // Option customizes a Client during construction.
@@ -37,6 +42,15 @@ func WithEndpoint(endpoint string) Option {
 	return func(c *Client) {
 		if endpoint != "" {
 			c.endpoint = strings.TrimRight(endpoint, "/")
+		}
+	}
+}
+
+// WithClobEndpoint overrides the CLOB API base URL.
+func WithClobEndpoint(endpoint string) Option {
+	return func(c *Client) {
+		if endpoint != "" {
+			c.clobEndpoint = strings.TrimRight(endpoint, "/")
 		}
 	}
 }
@@ -61,8 +75,9 @@ func WithHTTPClient(hc *http.Client) Option {
 // New constructs a Client with sane defaults.
 func New(opts ...Option) *Client {
 	c := &Client{
-		endpoint:   DefaultEndpoint,
-		httpClient: &http.Client{Timeout: 30 * time.Second},
+		endpoint:     DefaultEndpoint,
+		clobEndpoint: DefaultClobEndpoint,
+		httpClient:   &http.Client{Timeout: 30 * time.Second},
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -301,9 +316,91 @@ func (c *Client) ListTags(ctx context.Context, f TagFilter) ([]Tag, error) {
 	return tags, nil
 }
 
-// get performs a GET request and decodes the JSON response into out.
+// OrderBookLevel is a single price level in the order book. Price and Size are
+// decimal strings to preserve full precision.
+type OrderBookLevel struct {
+	Price string `json:"price"`
+	Size  string `json:"size"`
+}
+
+// OrderBook is the live CLOB order book for a single outcome token.
+type OrderBook struct {
+	Market         string           `json:"market"`    // condition ID of the parent market
+	AssetID        string           `json:"asset_id"`  // CLOB token ID of the outcome
+	Timestamp      string           `json:"timestamp"` // server timestamp in ms since epoch
+	Hash           string           `json:"hash"`      // content hash of the book snapshot
+	Bids           []OrderBookLevel `json:"bids"`      // buy orders, ascending by price
+	Asks           []OrderBookLevel `json:"asks"`      // sell orders, descending by price
+	MinOrderSize   string           `json:"min_order_size"`
+	TickSize       string           `json:"tick_size"`
+	NegRisk        bool             `json:"neg_risk"`
+	LastTradePrice string           `json:"last_trade_price"`
+}
+
+// GetOrderBook fetches the live order book for a CLOB outcome token.
+func (c *Client) GetOrderBook(ctx context.Context, tokenID string) (*OrderBook, error) {
+	q := url.Values{}
+	q.Set("token_id", tokenID)
+	var b OrderBook
+	if err := c.getCLOB(ctx, "/book", q, &b); err != nil {
+		return nil, err
+	}
+	return &b, nil
+}
+
+// GetPrice fetches the best price for a token on the given side ("buy"/"sell").
+func (c *Client) GetPrice(ctx context.Context, tokenID, side string) (string, error) {
+	q := url.Values{}
+	q.Set("token_id", tokenID)
+	q.Set("side", side)
+	var resp struct {
+		Price string `json:"price"`
+	}
+	if err := c.getCLOB(ctx, "/price", q, &resp); err != nil {
+		return "", err
+	}
+	return resp.Price, nil
+}
+
+// GetMidpoint fetches the midpoint price (halfway between best bid and ask).
+func (c *Client) GetMidpoint(ctx context.Context, tokenID string) (string, error) {
+	q := url.Values{}
+	q.Set("token_id", tokenID)
+	var resp struct {
+		Mid string `json:"mid"`
+	}
+	if err := c.getCLOB(ctx, "/midpoint", q, &resp); err != nil {
+		return "", err
+	}
+	return resp.Mid, nil
+}
+
+// GetSpread fetches the current bid-ask spread for a token.
+func (c *Client) GetSpread(ctx context.Context, tokenID string) (string, error) {
+	q := url.Values{}
+	q.Set("token_id", tokenID)
+	var resp struct {
+		Spread string `json:"spread"`
+	}
+	if err := c.getCLOB(ctx, "/spread", q, &resp); err != nil {
+		return "", err
+	}
+	return resp.Spread, nil
+}
+
+// get performs a GET against the Gamma API and decodes JSON into out.
 func (c *Client) get(ctx context.Context, path string, query url.Values, out any) error {
-	u := c.endpoint + path
+	return c.getFrom(ctx, c.endpoint, path, query, out)
+}
+
+// getCLOB performs a GET against the CLOB API and decodes JSON into out.
+func (c *Client) getCLOB(ctx context.Context, path string, query url.Values, out any) error {
+	return c.getFrom(ctx, c.clobEndpoint, path, query, out)
+}
+
+// getFrom performs a GET against the given base URL and decodes JSON into out.
+func (c *Client) getFrom(ctx context.Context, base, path string, query url.Values, out any) error {
+	u := base + path
 	if len(query) > 0 {
 		u += "?" + query.Encode()
 	}

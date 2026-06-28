@@ -26,8 +26,9 @@ type polymarketProvider struct {
 
 // polymarketProviderModel maps provider schema attributes to Go types.
 type polymarketProviderModel struct {
-	Endpoint types.String `tfsdk:"endpoint"`
-	APIKey   types.String `tfsdk:"api_key"`
+	Endpoint     types.String `tfsdk:"endpoint"`
+	ClobEndpoint types.String `tfsdk:"clob_endpoint"`
+	APIKey       types.String `tfsdk:"api_key"`
 }
 
 // New returns a function that constructs the provider, capturing the build
@@ -67,6 +68,15 @@ func (p *polymarketProvider) Schema(_ context.Context, _ provider.SchemaRequest,
 					"`POLYMARKET_ENDPOINT` environment variable. Override this to target a " +
 					"proxy or a mock server in tests.",
 			},
+			"clob_endpoint": schema.StringAttribute{
+				Optional: true,
+				Description: "Base URL of the Polymarket CLOB (order book) API. Defaults to " +
+					"\"https://clob.polymarket.com\". May also be set with the " +
+					"POLYMARKET_CLOB_ENDPOINT environment variable.",
+				MarkdownDescription: "Base URL of the Polymarket CLOB (order book) API. Defaults " +
+					"to `https://clob.polymarket.com`. May also be set with the " +
+					"`POLYMARKET_CLOB_ENDPOINT` environment variable.",
+			},
 			"api_key": schema.StringAttribute{
 				Optional:  true,
 				Sensitive: true,
@@ -94,10 +104,12 @@ func (p *polymarketProvider) Configure(ctx context.Context, req provider.Configu
 
 	// Configuration value precedence: explicit config > environment > default.
 	endpoint := firstNonEmpty(config.Endpoint, "POLYMARKET_ENDPOINT", client.DefaultEndpoint)
+	clobEndpoint := firstNonEmpty(config.ClobEndpoint, "POLYMARKET_CLOB_ENDPOINT", client.DefaultClobEndpoint)
 	apiKey := firstNonEmpty(config.APIKey, "POLYMARKET_API_KEY", "")
 
 	c := client.New(
 		client.WithEndpoint(endpoint),
+		client.WithClobEndpoint(clobEndpoint),
 		client.WithAPIKey(apiKey),
 	)
 
@@ -115,6 +127,10 @@ func (p *polymarketProvider) DataSources(_ context.Context) []func() datasource.
 		NewEventsDataSource,
 		NewSeriesDataSource,
 		NewTagsDataSource,
+		NewOrderBookDataSource,
+		NewPriceDataSource,
+		NewMidpointDataSource,
+		NewSpreadDataSource,
 	}
 }
 
