@@ -105,14 +105,20 @@ func (r *apiKeyResource) Create(ctx context.Context, _ resource.CreateRequest, r
 }
 
 // Read is a no-op: the CLOB has no fetch-by-key endpoint, and the credentials
-// are already fully captured in state.
+// are already fully captured in state. Round-trip the typed model so state is
+// preserved without modification.
 func (r *apiKeyResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	resp.Diagnostics.Append(resp.State.Set(ctx, req.State.Raw)...)
+	var state apiKeyResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-// Update never runs: the resource has no updatable attributes.
+// Update never runs in practice: the resource has only computed attributes, so
+// nothing can change. It persists the planned values for completeness.
 func (r *apiKeyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	resp.Diagnostics.Append(resp.State.Set(ctx, req.Plan.Raw)...)
+	var plan apiKeyResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
 func (r *apiKeyResource) Delete(ctx context.Context, _ resource.DeleteRequest, resp *resource.DeleteResponse) {

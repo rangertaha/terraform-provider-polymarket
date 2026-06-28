@@ -48,17 +48,16 @@ type PlacedOrder struct {
 
 // OrderStatus is the current state of a resting or completed order.
 type OrderStatus struct {
-	ID            string   `json:"id"`
-	Status        string   `json:"status"` // e.g. LIVE, MATCHED, CANCELED
-	Side          string   `json:"side"`
-	Price         string   `json:"price"`
-	OriginalSize  string   `json:"original_size"`
-	SizeMatched   string   `json:"size_matched"`
-	AssetID       string   `json:"asset_id"`
-	Market        string   `json:"market"`
-	Expiration    string   `json:"expiration"`
-	OrderType     string   `json:"order_type"`
-	AssociateTags []string `json:"associate_trades"`
+	ID           string `json:"id"`
+	Status       string `json:"status"` // e.g. LIVE, MATCHED, CANCELED
+	Side         string `json:"side"`
+	Price        string `json:"price"`
+	OriginalSize string `json:"original_size"`
+	SizeMatched  string `json:"size_matched"`
+	AssetID      string `json:"asset_id"`
+	Market       string `json:"market"`
+	Expiration   string `json:"expiration"`
+	OrderType    string `json:"order_type"`
 }
 
 // PlaceOrder signs and submits an order, returning the CLOB's acknowledgement.

@@ -26,7 +26,7 @@ plus authenticated trading and on-chain approvals. Built on the modern
 terraform {
   required_providers {
     polymarket = {
-      source  = "Rangertaha/polymarket"
+      source  = "rangertaha/polymarket"
       version = "~> 0.1"
     }
   }
@@ -89,7 +89,7 @@ To test locally, add a dev override to `~/.terraformrc`:
 ```hcl
 provider_installation {
   dev_overrides {
-    "Rangertaha/polymarket" = "/path/to/your/GOBIN"
+    "rangertaha/polymarket" = "/path/to/your/GOBIN"
   }
   direct {}
 }

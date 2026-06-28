@@ -29,7 +29,7 @@ func main() {
 	opts := providerserver.ServeOpts{
 		// The registry address used to source the provider in Terraform
 		// configurations (e.g. required_providers).
-		Address: "registry.terraform.io/Rangertaha/polymarket",
+		Address: "registry.terraform.io/rangertaha/polymarket",
 		Debug:   debug,
 	}
 

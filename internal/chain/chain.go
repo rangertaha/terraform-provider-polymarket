@@ -26,13 +26,12 @@ var MaxUint256 = new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewI
 
 // Client manages on-chain approvals for a single wallet.
 type Client struct {
-	eth        *ethclient.Client
-	erc20      abi.ABI
-	erc1155    abi.ABI
-	key        *ecdsa.PrivateKey
-	from       common.Address
-	chainID    *big.Int
-	rpcAddress string
+	eth     *ethclient.Client
+	erc20   abi.ABI
+	erc1155 abi.ABI
+	key     *ecdsa.PrivateKey
+	from    common.Address
+	chainID *big.Int
 }
 
 // New dials the JSON-RPC endpoint and prepares a signer from the private key.
@@ -49,13 +48,12 @@ func New(ctx context.Context, rpcURL, privKeyHex string, chainID int64) (*Client
 	}
 
 	return &Client{
-		eth:        eth,
-		erc20:      mustParseABI(erc20ABI),
-		erc1155:    mustParseABI(erc1155ABI),
-		key:        key,
-		from:       crypto.PubkeyToAddress(key.PublicKey),
-		chainID:    big.NewInt(chainID),
-		rpcAddress: rpcURL,
+		eth:     eth,
+		erc20:   mustParseABI(erc20ABI),
+		erc1155: mustParseABI(erc1155ABI),
+		key:     key,
+		from:    crypto.PubkeyToAddress(key.PublicKey),
+		chainID: big.NewInt(chainID),
 	}, nil
 }
 

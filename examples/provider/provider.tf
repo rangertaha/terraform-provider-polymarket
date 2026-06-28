@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     polymarket = {
-      source  = "Rangertaha/polymarket"
+      source  = "rangertaha/polymarket"
       version = "~> 0.1"
     }
   }
