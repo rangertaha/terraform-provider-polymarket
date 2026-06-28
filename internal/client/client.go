@@ -560,6 +560,59 @@ func (c *Client) GetValue(ctx context.Context, user string) (Value, error) {
 	return values[0], nil
 }
 
+// Activity is a single entry in a wallet's unified on-chain activity feed
+// (trades, rewards, splits, merges, redemptions, conversions).
+type Activity struct {
+	ProxyWallet     string  `json:"proxyWallet"`
+	Timestamp       int64   `json:"timestamp"`
+	ConditionID     string  `json:"conditionId"`
+	Type            string  `json:"type"` // TRADE, REWARD, SPLIT, MERGE, REDEEM, CONVERSION
+	Size            float64 `json:"size"`
+	UsdcSize        float64 `json:"usdcSize"`
+	TransactionHash string  `json:"transactionHash"`
+	Price           float64 `json:"price"`
+	Asset           string  `json:"asset"`
+	Side            string  `json:"side"`
+	OutcomeIndex    int64   `json:"outcomeIndex"`
+	Title           string  `json:"title"`
+	Slug            string  `json:"slug"`
+	EventSlug       string  `json:"eventSlug"`
+	Outcome         string  `json:"outcome"`
+}
+
+// ActivityFilter narrows a ListActivity query. User is required.
+type ActivityFilter struct {
+	User   string
+	Type   string // optional activity type to filter to, e.g. "TRADE"
+	Market string // optional condition ID to filter to one market
+	Limit  int64
+	Offset int64
+}
+
+// ListActivity fetches a wallet's unified on-chain activity feed.
+func (c *Client) ListActivity(ctx context.Context, f ActivityFilter) ([]Activity, error) {
+	q := url.Values{}
+	q.Set("user", f.User)
+	if f.Type != "" {
+		q.Set("type", f.Type)
+	}
+	if f.Market != "" {
+		q.Set("market", f.Market)
+	}
+	if f.Limit > 0 {
+		q.Set("limit", strconv.FormatInt(f.Limit, 10))
+	}
+	if f.Offset > 0 {
+		q.Set("offset", strconv.FormatInt(f.Offset, 10))
+	}
+
+	var activity []Activity
+	if err := c.getData(ctx, "/activity", q, &activity); err != nil {
+		return nil, err
+	}
+	return activity, nil
+}
+
 // GetHolders fetches the top holders for each outcome token of a market,
 // identified by its condition ID.
 func (c *Client) GetHolders(ctx context.Context, market string, limit int64) ([]HolderGroup, error) {

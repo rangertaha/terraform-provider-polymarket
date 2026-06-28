@@ -119,6 +119,10 @@ Public on-chain analytics keyed by wallet address or market.
 **Exit criteria (met):** given a wallet address, a config reports current
 positions, executed trades, and realized/unrealized value — read-only, no signing.
 
+> **Extended coverage added.** `polymarket_activity` (`GET /activity`) surfaces a
+> wallet's unified on-chain feed — trades, rewards, splits, merges, redemptions,
+> and conversions — with optional type/market filters. Verified live.
+
 ---
 
 ## Phase 4 — Authentication & signing layer (foundation for writes) 🔒

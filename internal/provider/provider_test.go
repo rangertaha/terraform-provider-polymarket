@@ -29,8 +29,8 @@ func testAccPreCheck(t *testing.T) {
 func TestProvider(t *testing.T) {
 	p := New("test")()
 
-	if got := len(p.DataSources(context.Background())); got != 18 {
-		t.Errorf("expected 18 data sources, got %d", got)
+	if got := len(p.DataSources(context.Background())); got != 19 {
+		t.Errorf("expected 19 data sources, got %d", got)
 	}
 	if got := len(p.Resources(context.Background())); got != 3 {
 		t.Errorf("expected 3 resources, got %d", got)

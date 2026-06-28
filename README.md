@@ -60,7 +60,7 @@ Read-only; no credentials required.
 | --- | --- |
 | **Gamma catalog** | `polymarket_market`, `polymarket_markets`, `polymarket_event`, `polymarket_events`, `polymarket_series`, `polymarket_tags` |
 | **CLOB pricing** | `polymarket_order_book`, `polymarket_order_books` (batch), `polymarket_price`, `polymarket_prices` (batch), `polymarket_midpoint`, `polymarket_spread`, `polymarket_price_history` |
-| **Data / portfolio** | `polymarket_positions`, `polymarket_trades`, `polymarket_portfolio_value`, `polymarket_holders` |
+| **Data / portfolio** | `polymarket_positions`, `polymarket_trades`, `polymarket_activity`, `polymarket_portfolio_value`, `polymarket_holders` |
 | **Auth** | `polymarket_api_credentials` (requires `private_key`) |
 
 ## Resources

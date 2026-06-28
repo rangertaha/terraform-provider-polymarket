@@ -243,6 +243,7 @@ func (p *polymarketProvider) DataSources(_ context.Context) []func() datasource.
 		NewPriceHistoryDataSource,
 		NewPositionsDataSource,
 		NewTradesDataSource,
+		NewActivityDataSource,
 		NewPortfolioValueDataSource,
 		NewHoldersDataSource,
 		NewAPICredentialsDataSource,
