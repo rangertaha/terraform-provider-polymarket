@@ -115,11 +115,41 @@ type Market struct {
 	AcceptingOrders bool `json:"acceptingOrders"`
 }
 
-// Tag is a category label attached to events and markets.
+// Tag is a category label attached to events and markets. CreatedAt/UpdatedAt
+// are populated by the /tags endpoint and empty when embedded in an event.
 type Tag struct {
-	ID    string `json:"id"`
-	Label string `json:"label"`
-	Slug  string `json:"slug"`
+	ID        string `json:"id"`
+	Label     string `json:"label"`
+	Slug      string `json:"slug"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
+}
+
+// Series groups recurring events under a common theme (e.g. a weekly market).
+type Series struct {
+	ID              string  `json:"id"`
+	Ticker          string  `json:"ticker"`
+	Slug            string  `json:"slug"`
+	Title           string  `json:"title"`
+	SeriesType      string  `json:"seriesType"`
+	Recurrence      string  `json:"recurrence"`
+	Image           string  `json:"image"`
+	Icon            string  `json:"icon"`
+	Active          bool    `json:"active"`
+	Closed          bool    `json:"closed"`
+	Archived        bool    `json:"archived"`
+	Featured        bool    `json:"featured"`
+	Restricted      bool    `json:"restricted"`
+	CommentsEnabled bool    `json:"commentsEnabled"`
+	Competitive     string  `json:"competitive"`
+	Volume24hr      float64 `json:"volume24hr"`
+	Volume          float64 `json:"volume"`
+	Liquidity       float64 `json:"liquidity"`
+	StartDate       string  `json:"startDate"`
+	CreatedAt       string  `json:"createdAt"`
+	UpdatedAt       string  `json:"updatedAt"`
+	CommentCount    int64   `json:"commentCount"`
+	Events          []Event `json:"events"`
 }
 
 // Event groups one or more related markets (e.g. all outcomes of an election).
@@ -237,6 +267,38 @@ func (c *Client) ListEvents(ctx context.Context, f EventFilter) ([]Event, error)
 		return nil, err
 	}
 	return events, nil
+}
+
+// GetSeries fetches a single series by its numeric ID.
+func (c *Client) GetSeries(ctx context.Context, id string) (*Series, error) {
+	var s Series
+	if err := c.get(ctx, "/series/"+url.PathEscape(id), nil, &s); err != nil {
+		return nil, err
+	}
+	return &s, nil
+}
+
+// TagFilter narrows a ListTags query. Zero-value fields are omitted.
+type TagFilter struct {
+	Limit  int64
+	Offset int64
+}
+
+// ListTags fetches category tags matching the supplied filter.
+func (c *Client) ListTags(ctx context.Context, f TagFilter) ([]Tag, error) {
+	q := url.Values{}
+	if f.Limit > 0 {
+		q.Set("limit", strconv.FormatInt(f.Limit, 10))
+	}
+	if f.Offset > 0 {
+		q.Set("offset", strconv.FormatInt(f.Offset, 10))
+	}
+
+	var tags []Tag
+	if err := c.get(ctx, "/tags", q, &tags); err != nil {
+		return nil, err
+	}
+	return tags, nil
 }
 
 // get performs a GET request and decodes the JSON response into out.

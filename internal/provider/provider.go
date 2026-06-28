@@ -113,6 +113,8 @@ func (p *polymarketProvider) DataSources(_ context.Context) []func() datasource.
 		NewMarketsDataSource,
 		NewEventDataSource,
 		NewEventsDataSource,
+		NewSeriesDataSource,
+		NewTagsDataSource,
 	}
 }
 
